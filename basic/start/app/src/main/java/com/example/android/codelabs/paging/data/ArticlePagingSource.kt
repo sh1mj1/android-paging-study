@@ -2,6 +2,7 @@ package com.example.android.codelabs.paging.data
 
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
+import kotlinx.coroutines.delay
 import java.time.LocalDateTime
 import kotlin.math.max
 
@@ -13,6 +14,8 @@ class ArticlePagingSource : PagingSource<Int, Article>() {
 
         // 로드할 아이템의 수만큼 로드한다. params.loaddSize 가 로드할 아이템 수를 나타낸다
         val range = start.until(start + params.loadSize)
+
+        if (start != STARTING_KEY) delay(LOAD_DELAY_MILLIS)
 
         return LoadResult.Page(
             data = range.map { number ->
@@ -47,6 +50,7 @@ class ArticlePagingSource : PagingSource<Int, Article>() {
 
 private const val STARTING_KEY = 0
 private val firstArticleCreatedTime = LocalDateTime.now()
+private const val LOAD_DELAY_MILLIS = 3_000L
 
 /**
  *
