@@ -44,16 +44,6 @@ class ArticleViewModel(
         .flow
         .cachedIn(viewModelScope)
 
-
-    /**
-     * Stream of [Article]s for the UI.
-     */
-    val items2: StateFlow<List<Article>> = repository.articleStream
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(),
-            initialValue = listOf()
-        )
 }
 
 private const val ITEMS_PER_PAGE = 50
