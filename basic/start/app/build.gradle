@@ -19,6 +19,7 @@ apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-kapt'
 
 android {
+    namespace "com.example.android.codelabs.paging"
     compileSdk buildConfig.compileSdk
 
     defaultConfig {
