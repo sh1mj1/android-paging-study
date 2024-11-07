@@ -27,6 +27,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.android.codelabs.paging.Injection
 import com.example.android.codelabs.paging.databinding.ActivityArticlesBinding
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class ArticleActivity : AppCompatActivity() {
@@ -37,24 +38,19 @@ class ArticleActivity : AppCompatActivity() {
         val view = binding.root
         setContentView(view)
 
-        // Get the view model
         val viewModel by viewModels<ArticleViewModel>(
             factoryProducer = { Injection.provideViewModelFactory(owner = this) }
         )
 
-        val items = viewModel.items2
+        val items = viewModel.items
         val articleAdapter = ArticleAdapter()
 
         binding.bindAdapter(articleAdapter = articleAdapter)
 
-        // Collect from the Article Flow in the ViewModel, and submit it to the
-        // ListAdapter.
         lifecycleScope.launch {
-            // We repeat on the STARTED lifecycle because an Activity may be PAUSED
-            // but still visible on the screen, for example in a multi window app
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                items.collect {
-                    articleAdapter.submitList(it)
+                items.collectLatest {
+                    articleAdapter.submitData(it)
                 }
             }
         }
