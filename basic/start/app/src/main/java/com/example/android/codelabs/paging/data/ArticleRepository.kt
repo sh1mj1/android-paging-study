@@ -39,4 +39,15 @@ class ArticleRepository {
             )
         }
     )
+
+    fun articlePagingSource() = ArticlePagingSource()
+
 }
+
+/*
+The Paging library does a lot of things for us:
+
+Handles in-memory cache.
+Requests data when the user is close to the end of the list.
+
+ */
