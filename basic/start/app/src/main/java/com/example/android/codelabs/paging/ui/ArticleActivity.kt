@@ -20,7 +20,6 @@ import android.os.Bundle
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -43,7 +42,7 @@ class ArticleActivity : AppCompatActivity() {
             factoryProducer = { Injection.provideViewModelFactory(owner = this) }
         )
 
-        val items = viewModel.items
+        val items = viewModel.items2
         val articleAdapter = ArticleAdapter()
 
         binding.bindAdapter(articleAdapter = articleAdapter)
