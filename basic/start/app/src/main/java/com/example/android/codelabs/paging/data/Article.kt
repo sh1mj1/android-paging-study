@@ -32,3 +32,21 @@ data class Article(
 val Article.createdText: String get() = articleDateFormatter.format(created)
 
 private val articleDateFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy")
+
+
+data class ArticleWithoutTime(
+    val id: Int,
+    val title: String,
+    val description: String,
+) {
+    companion object {
+        fun from(article: Article): ArticleWithoutTime {
+            return ArticleWithoutTime(
+                id = article.id,
+                title = article.title,
+                description = article.description,
+            )
+        }
+    }
+}
+
