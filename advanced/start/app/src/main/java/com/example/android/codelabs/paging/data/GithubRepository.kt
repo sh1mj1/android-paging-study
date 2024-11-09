@@ -77,7 +77,7 @@ class GithubRepository(private val service: GithubService) {
         isRequestInProgress = true
         var successful = false
 
-        val apiQuery = query + IN_QUALIFIER
+        val apiQuery = "$query $IN_QUALIFIER"
         try {
             val response = service.searchRepos(apiQuery, lastRequestedPage, NETWORK_PAGE_SIZE)
             Log.d("GithubRepository", "response $response")
