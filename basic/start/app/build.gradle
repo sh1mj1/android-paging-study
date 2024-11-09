@@ -1,4 +1,3 @@
-
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-kapt'
@@ -42,10 +41,19 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArguments["runnerBuilder"] = "de.mannodermaus.junit5.AndroidJUnit5Builder"
     }
+    packagingOptions {
+        exclude "win32-x86/attach_hotspot_windows.dll"
+        exclude "win32-x86-64/attach_hotspot_windows.dll"
+
+        exclude "META-INF/*"
+        exclude "META-INF/licenses/*"
+    }
 }
 
 
 dependencies {
+    testImplementation project(':app')
+    testImplementation project(':app')
     coreLibraryDesugaring libs.android.desugarJdkLibs
     implementation libs.kotlinx.coroutines.core
     implementation libs.kotlinx.coroutines.android
@@ -62,22 +70,24 @@ dependencies {
 
     // Unit Test
     testImplementation libs.junit
-    testImplementation libs.junit.jupiter.api
-    testRuntimeOnly libs.junit.jupiter.engine
-    testRuntimeOnly libs.junit.vintage.engine
+
     testImplementation libs.kotlinx.coroutines.test
-    testImplementation libs.kotest.runner.junit5
+    androidTestImplementation libs.kotlinx.coroutines.test
+
     testImplementation libs.kotest.assertions.core
     testImplementation libs.kotest.property
 
-    // Android Test
-    androidTestImplementation libs.androidx.junit
-    androidTestImplementation libs.androidx.espresso.core
     androidTestImplementation libs.androidx.lifecycle.runtime.ktx
     androidTestImplementation libs.androidx.lifecycle.viewModel.ktx
-    androidTestImplementation libs.androidx.paging.common.ktx
 
-    // JUnit 5 Android Runner (de.mannodermaus.junit5)
-    androidTestImplementation libs.android.test.runner
+    androidTestImplementation libs.androidx.paging.common.ktx
+    testImplementation libs.androidx.paging.testing
+    androidTestImplementation libs.androidx.paging.testing
+
+//    android-test
+    androidTestImplementation(libs.bundles.android.test)
+    debugImplementation(libs.bundles.android.test)
+
+    testRuntimeOnly(libs.junit.vintage.engine)
     androidTestRuntimeOnly libs.android.test.runner
 }
