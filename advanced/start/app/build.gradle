@@ -19,7 +19,9 @@ apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-kapt'
 
 android {
+    namespace "com.example.android.codelabs.paging"
     compileSdkVersion rootProject.compileSdkVersion
+
     defaultConfig {
         applicationId "com.example.android.codelabs.paging"
         minSdkVersion rootProject.minSdkVersion
@@ -36,13 +38,13 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "17" // Set to "1.8" if you need Java 8 compatibility
         freeCompilerArgs += ["-Xopt-in=kotlin.RequiresOptIn"]
     }
 
     compileOptions {
-        sourceCompatibility 1.8
-        targetCompatibility 1.8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     buildFeatures {
