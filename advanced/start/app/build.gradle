@@ -30,6 +30,15 @@ android {
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
+
+    packagingOptions {
+        exclude "win32-x86/attach_hotspot_windows.dll"
+        exclude "win32-x86-64/attach_hotspot_windows.dll"
+
+        exclude "META-INF/*"
+        exclude "META-INF/licenses/*"
+    }
+
     buildTypes {
         release {
             minifyEnabled false
@@ -77,4 +86,26 @@ dependencies {
     implementation "com.squareup.retrofit2:converter-gson:$retrofitVersion"
     implementation "com.squareup.retrofit2:retrofit-mock:$retrofitVersion"
     implementation "com.squareup.okhttp3:logging-interceptor:$okhttpLoggingInterceptorVersion"
+
+    // test
+    implementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.10.2'
+    testImplementation 'io.kotest:kotest-runner-junit5:5.8.0'
+    testImplementation 'de.mannodermaus.junit5:android-test-runner:1.4.0'
+    implementation 'junit:junit:4.13.2'
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
+
+    // kotest
+    implementation 'io.kotest:kotest-assertions-core-jvm:5.8.0'
+    testImplementation 'io.kotest:kotest-assertions-core-jvm:5.8.0'
+    testImplementation 'io.kotest:kotest-property-jvm:5.8.0'
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
+    testRuntimeOnly("org.junit.vintage:junit-vintage-engine:5.10.2")
+    testImplementation("io.kotest:kotest-runner-junit5:5.8.0")
+    testImplementation("de.mannodermaus.junit5:android-test-runner:1.4.0")
+
+
 }

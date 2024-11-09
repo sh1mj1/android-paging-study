@@ -33,6 +33,10 @@ allprojects {
         google()
         mavenCentral()
     }
+
+    tasks.withType(Test).configureEach {
+        useJUnitPlatform()
+    }
 }
 
 task clean(type: Delete) {
