@@ -20,6 +20,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.savedstate.SavedStateRegistryOwner
 import com.example.android.codelabs.paging.data.ArticleRepository
+import com.example.android.codelabs.paging.data.IArticleRepository
 import com.example.android.codelabs.paging.ui.ViewModelFactory
 
 /**
@@ -32,7 +33,7 @@ object Injection {
     /**
      * Creates an instance of [ArticleRepository]
      */
-    private fun provideArticleRepository(): ArticleRepository = ArticleRepository()
+    private fun provideArticleRepository(): IArticleRepository = ArticleRepository()
 
     /**
      * Provides the [ViewModelProvider.Factory] that is then used to get a reference to

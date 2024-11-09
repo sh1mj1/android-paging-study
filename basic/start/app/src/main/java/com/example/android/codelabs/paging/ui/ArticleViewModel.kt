@@ -24,17 +24,15 @@ import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.example.android.codelabs.paging.data.Article
 import com.example.android.codelabs.paging.data.ArticleRepository
+import com.example.android.codelabs.paging.data.IArticleRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.stateIn
 
 /**
  * ViewModel for the [ArticleActivity] screen.
  * The ViewModel works with the [ArticleRepository] to get the data.
  */
 class ArticleViewModel(
-    repository: ArticleRepository,
+    repository: IArticleRepository,
 ) : ViewModel() {
 
     val items: Flow<PagingData<Article>> = Pager(

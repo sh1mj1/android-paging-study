@@ -9,16 +9,15 @@ import kotlin.math.max
 
 class ArticlePagingSource : PagingSource<Int, Article>() {
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Article> {
-        // 첫번째 로드라면 STARTING_KEY 로 페이징을 시작한다.
         val start = params.key ?: STARTING_KEY
 
-        // 로드할 아이템의 수만큼 로드한다. params.loaddSize 가 로드할 아이템 수를 나타낸다
-        val range = start.until(start + params.loadSize)
+        val rangeItemLoaded = start.until(start + params.loadSize)
+
 
         if (start != STARTING_KEY) delay(LOAD_DELAY_MILLIS)
 
         return LoadResult.Page(
-            data = range.map { number ->
+            data = rangeItemLoaded.map { number ->
                 Article(
                     id = number, // 게시물 id 로 1씩 증가하는 숫자
                     title = "Article $number",
@@ -29,9 +28,9 @@ class ArticlePagingSource : PagingSource<Int, Article>() {
             // STARTING_KEY 이전에는 아이템을 로드하지 않도록 한다
             prevKey = when (start) {
                 STARTING_KEY -> null
-                else -> validKey(key = range.first - params.loadSize)
+                else -> validKey(key = rangeItemLoaded.first - params.loadSize)
             },
-            nextKey = range.last + 1,
+            nextKey = rangeItemLoaded.last + 1,
         )
     }
 
@@ -51,6 +50,7 @@ class ArticlePagingSource : PagingSource<Int, Article>() {
 private const val STARTING_KEY = 0
 private val firstArticleCreatedTime = LocalDateTime.now()
 private const val LOAD_DELAY_MILLIS = 3_000L
+
 
 /**
  *
