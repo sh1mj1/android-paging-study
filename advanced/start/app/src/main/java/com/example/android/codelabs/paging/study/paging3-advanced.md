@@ -31,6 +31,8 @@ Liberary will handle once we're doone adding it:
 * Keep an in-memory cache of the retrieved data.
 * Keep track of the page to be requested.
 
+## PagingSource
+
 To Build the PagingSource you need to define the following:
 
 * Type of Paging Key: in our case, Int.
@@ -62,6 +64,31 @@ it represents the most recently accessed index.
 
 The GithubPagingSource implementation looks like this:
 [GithubPagingSource.kt](../data/GithubPagingSource.kt)
+
+## PagingData
+
+To construct the PagingData, we first need to decide what API we want to use to pass the PagingData
+to other layers of our app:
+
+* Kotlin Flow
+* Android LiveData
+* RxJava Flowable
+* RxJava Observable
+
+No matter What u choose, you have to pass the following parameters to the PagingData Builder :
+
+* config: PagingConfig
+* pagingSourceFactory: A function that defines how to create the PagingSource.  
+  In our case, we'll create a new GithubPagingSource for each new query.
+
+Paging 3 does a lot of things for us:
+
+Handles in-memory cache.
+Requests data when the user is close to the end of the list.
+
+
+
+
 
 
 

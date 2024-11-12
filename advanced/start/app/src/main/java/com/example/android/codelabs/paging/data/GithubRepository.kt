@@ -17,8 +17,10 @@
 package com.example.android.codelabs.paging.data
 
 import android.util.Log
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
 import com.example.android.codelabs.paging.api.GithubService
-import com.example.android.codelabs.paging.api.IN_QUALIFIER
 import com.example.android.codelabs.paging.model.Repo
 import com.example.android.codelabs.paging.model.RepoSearchResult
 import kotlinx.coroutines.flow.Flow
@@ -60,6 +62,16 @@ class GithubRepository(private val service: GithubService) {
         return searchResults
     }
 
+    fun searchResultStream1(query: String): Flow<PagingData<Repo>> {
+        return Pager(
+            config = PagingConfig(
+                pageSize = NETWORK_PAGE_SIZE,
+                enablePlaceholders = false
+            ),
+            pagingSourceFactory = { GithubPagingSource(service, query) }
+        ).flow
+    }
+
     suspend fun requestMore(query: String) {
         if (isRequestInProgress) return
         val successful = requestAndSaveData(query)
@@ -77,7 +89,7 @@ class GithubRepository(private val service: GithubService) {
         isRequestInProgress = true
         var successful = false
 
-        val apiQuery = "$query $IN_QUALIFIER"
+        val apiQuery = "$query ${GithubService.IN_QUALIFIER}"
         try {
             val response = service.searchRepos(apiQuery, lastRequestedPage, NETWORK_PAGE_SIZE)
             Log.d("GithubRepository", "response $response")
@@ -105,6 +117,6 @@ class GithubRepository(private val service: GithubService) {
     }
 
     companion object {
-        const val NETWORK_PAGE_SIZE = 30
+        const val NETWORK_PAGE_SIZE = 50
     }
 }
