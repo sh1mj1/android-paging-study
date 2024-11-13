@@ -18,7 +18,7 @@ class GithubPagingSource(
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Repo> {
         val curPage: Int = params.key ?: START_PAGE
         val loadSize: Int = params.loadSize
-        val apiQuery: String = query + IN_QUALIFIER
+        val apiQuery: String = "$query $IN_QUALIFIER"
         return try {
             val response: RepoSearchResponse = service.searchRepos(apiQuery, curPage, loadSize)
             val repos: List<Repo> = response.items
@@ -43,9 +43,9 @@ class GithubPagingSource(
         val anchorPosition: Int = state.anchorPosition ?: return null
         val closestPage = state.closestPageToPosition(anchorPosition) ?: return null
         // 1) 이전 페이지 번호가 있으면, 이전 키를 통해 현재 페이지에 해당하는 position을 찾아낸다.
-        closestPage.prevKey?.let { prePage -> return prePage + 1 }
+        closestPage.prevKey?.let { prePage -> return prePage + 1 }?.also { println("로그 : preKey : $it") }
         // 2) 다음 페이지 번호를 통해 현재 페이지에 해당하는 position을 찾아낸다.
-        closestPage.nextKey?.let { nextPage -> return nextPage - 1 }
+        closestPage.nextKey?.let { nextPage -> return nextPage - 1 }.also { println("로그 : nextKey : $it") }
         // 3) 이전 페이지 번호와 다음 페이지 번호가 모두 없으면 null을 반환한다.
         return null
     }
