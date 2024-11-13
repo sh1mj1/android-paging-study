@@ -20,7 +20,6 @@ import android.os.Bundle
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -28,10 +27,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.android.codelabs.paging.Injection
 import com.example.android.codelabs.paging.databinding.ActivityArticlesBinding
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class ArticleActivity : AppCompatActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val binding = ActivityArticlesBinding.inflate(layoutInflater)
@@ -40,7 +39,7 @@ class ArticleActivity : AppCompatActivity() {
 
         // Get the view model
         val viewModel by viewModels<ArticleViewModel>(
-            factoryProducer = { Injection.provideViewModelFactory(owner = this) }
+            factoryProducer = { Injection.provideViewModelFactory(owner = this) },
         )
 
         val items = viewModel.items
@@ -54,8 +53,8 @@ class ArticleActivity : AppCompatActivity() {
             // We repeat on the STARTED lifecycle because an Activity may be PAUSED
             // but still visible on the screen, for example in a multi window app
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                items.collect {
-                    articleAdapter.submitList(it)
+                items.collectLatest {
+                    articleAdapter.submitData(it)
                 }
             }
         }

@@ -18,26 +18,31 @@ package com.example.android.codelabs.paging.ui
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.ListAdapter
 import com.example.android.codelabs.paging.data.Article
 import com.example.android.codelabs.paging.databinding.ArticleViewholderBinding
 
 /**
  * Adapter for an [Article] [List].
  */
-class ArticleAdapter : ListAdapter<Article, ArticleViewHolder>(ARTICLE_DIFF_CALLBACK) {
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ArticleViewHolder =
+class ArticleAdapter : PagingDataAdapter<Article, ArticleViewHolder>(ARTICLE_DIFF_CALLBACK) {
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int,
+    ): ArticleViewHolder =
         ArticleViewHolder(
             ArticleViewholderBinding.inflate(
                 LayoutInflater.from(parent.context),
                 parent,
                 false,
-            )
+            ),
         )
 
-    override fun onBindViewHolder(holder: ArticleViewHolder, position: Int) {
+    override fun onBindViewHolder(
+        holder: ArticleViewHolder,
+        position: Int,
+    ) {
         val tile = getItem(position)
         if (tile != null) {
             holder.bind(tile)
@@ -45,12 +50,17 @@ class ArticleAdapter : ListAdapter<Article, ArticleViewHolder>(ARTICLE_DIFF_CALL
     }
 
     companion object {
-        private val ARTICLE_DIFF_CALLBACK = object : DiffUtil.ItemCallback<Article>() {
-            override fun areItemsTheSame(oldItem: Article, newItem: Article): Boolean =
-                oldItem.id == newItem.id
+        private val ARTICLE_DIFF_CALLBACK =
+            object : DiffUtil.ItemCallback<Article>() {
+                override fun areItemsTheSame(
+                    oldItem: Article,
+                    newItem: Article,
+                ): Boolean = oldItem.id == newItem.id
 
-            override fun areContentsTheSame(oldItem: Article, newItem: Article): Boolean =
-                oldItem == newItem
-        }
+                override fun areContentsTheSame(
+                    oldItem: Article,
+                    newItem: Article,
+                ): Boolean = oldItem == newItem
+            }
     }
 }
