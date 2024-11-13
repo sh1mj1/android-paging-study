@@ -31,15 +31,14 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.RecyclerView
 import com.example.android.codelabs.paging.Injection
 import com.example.android.codelabs.paging.databinding.ActivitySearchRepositoriesBinding
+import com.example.android.codelabs.paging.utils.RemotePresentationState
+import com.example.android.codelabs.paging.utils.asRemotePresentationState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.distinctUntilChangedBy
-import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 class SearchRepositoriesActivity : AppCompatActivity() {
@@ -50,9 +49,12 @@ class SearchRepositoriesActivity : AppCompatActivity() {
         val view = binding.root
         setContentView(view)
 
-        // get the view model
-        val viewModel = ViewModelProvider(this, Injection.provideViewModelFactory(owner = this))
-            .get(SearchRepositoriesViewModel::class.java)
+        val viewModel = ViewModelProvider(
+            this, Injection.provideViewModelFactory(
+                context = this,
+                owner = this
+            )
+        )[SearchRepositoriesViewModel::class.java]
 
         // add dividers between RecyclerView's row items
         val decoration = DividerItemDecoration(this, DividerItemDecoration.VERTICAL)
@@ -80,15 +82,18 @@ class SearchRepositoriesActivity : AppCompatActivity() {
         uiEvent: (UiEvent) -> Unit
     ) {
         val repoAdapter = ReposAdapter()
+        val header = ReposLoadStateAdapter { repoAdapter.retry() }
+        val footer = ReposLoadStateAdapter { repoAdapter.retry() }
         list.adapter = repoAdapter.withLoadStateHeaderAndFooter(
-            header = ReposLoadStateAdapter { repoAdapter.retry() },
-            footer = ReposLoadStateAdapter { repoAdapter.retry() }
+            header = header,
+            footer = footer
         )
         bindSearch(
             uiState = uiState,
             onQueryChanged = uiEvent
         )
         bindList(
+            header = header,
             repoAdapter = repoAdapter,
             uiState = uiState,
             pagingData = pagingData,
@@ -143,6 +148,7 @@ class SearchRepositoriesActivity : AppCompatActivity() {
      * [CombinedLoadStates.append]: 목록의 끝에서 데이터를 로드하는 작업의 로드 상태를 나타냅니다.
      * */
     private fun ActivitySearchRepositoriesBinding.bindList(
+        header: ReposLoadStateAdapter,
         repoAdapter: ReposAdapter,
         uiState: StateFlow<UiState>,
         pagingData: Flow<PagingData<UiModel>>,
@@ -150,14 +156,50 @@ class SearchRepositoriesActivity : AppCompatActivity() {
     ) {
         retryButton.setOnClickListener { repoAdapter.retry() }
 
+        list.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                if (dy != 0) onScrollChanged(UiEvent.Scroll(currentQuery = uiState.value.query))
+            }
+        })
+        val isNotLoading = repoAdapter.loadStateFlow
+            .asRemotePresentationState()
+            .map { it == RemotePresentationState.PRESENTED }
+
+        val hasNotScrolled = uiState
+            .map { it.hasScrolled.not() }
+            .distinctUntilChanged()
+        val shouldScrollToTop = combine(
+            isNotLoading,
+            hasNotScrolled,
+            Boolean::and
+        ).distinctUntilChanged()
+
         lifecycleScope.launch {
-            repoAdapter.loadStateFlow.collectLatest { loadState: CombinedLoadStates ->
+            pagingData.collectLatest(repoAdapter::submitData)
+        }
+
+        lifecycleScope.launch {
+            shouldScrollToTop.collect { shouldScroll ->
+                if (shouldScroll) list.scrollToPosition(0)
+            }
+        }
+
+        lifecycleScope.launch {
+            repoAdapter.loadStateFlow.collect { loadState: CombinedLoadStates ->
+
+                header.loadState = loadState.mediator
+                    ?.refresh
+                    ?.takeIf { it is LoadState.Error && repoAdapter.itemCount > 0 }
+                    ?: loadState.prepend
+
                 val isListEmpty =
                     loadState.refresh is LoadState.NotLoading && repoAdapter.itemCount == 0
                 emptyList.isVisible = isListEmpty
-                list.isVisible = isListEmpty.not()
-                progressBar.isVisible = loadState.source.refresh is LoadState.Loading
-                retryButton.isVisible = loadState.source.refresh is LoadState.Error
+                list.isVisible =
+                    loadState.source.refresh is LoadState.NotLoading || loadState.mediator?.refresh is LoadState.NotLoading
+                progressBar.isVisible = loadState.mediator?.refresh is LoadState.Loading
+                retryButton.isVisible =
+                    loadState.mediator?.refresh is LoadState.Error && repoAdapter.itemCount == 0
 
                 val errorState =
                     loadState.refresh as? LoadState.Error
@@ -175,40 +217,6 @@ class SearchRepositoriesActivity : AppCompatActivity() {
                     ).show()
                 }
 
-            }
-        }
-        list.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                if (dy != 0) onScrollChanged(UiEvent.Scroll(currentQuery = uiState.value.query))
-            }
-        })
-        val isNotLoading = repoAdapter.loadStateFlow
-            // Refresh 요청이 완료되었을 때만 반응합니다.
-            .distinctUntilChangedBy { it.source.refresh }
-            // Only react to cases where REFRESH completes i.e., NotLoading.
-            // 데이터 로드 완료
-            .map { it.source.refresh is LoadState.NotLoading }
-
-        val hasNotScrolled = uiState
-            .map { it.hasScrolled.not() }
-            .distinctUntilChanged()
-        val shouldScrollToTop = combine(
-            isNotLoading,
-            hasNotScrolled,
-            Boolean::and
-        ).distinctUntilChanged()
-
-        isNotLoading.onEach { println("로그: isNotLoading: $it") }.launchIn(lifecycleScope)
-        hasNotScrolled.onEach { println("로그: hasNotScrolled: $it") }.launchIn(lifecycleScope)
-        shouldScrollToTop.onEach { println("로그: shouldScrollToTop: $it") }.launchIn(lifecycleScope)
-
-        lifecycleScope.launch {
-            pagingData.collectLatest(repoAdapter::submitData)
-        }
-
-        lifecycleScope.launch {
-            shouldScrollToTop.collect { shouldScroll ->
-                if (shouldScroll) list.scrollToPosition(0)
             }
         }
     }
