@@ -21,6 +21,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import androidx.paging.insertSeparators
+import androidx.paging.map
 import com.example.android.codelabs.paging.data.GithubRepository
 import com.example.android.codelabs.paging.model.Repo
 import kotlinx.coroutines.flow.Flow
@@ -48,9 +50,12 @@ class SearchRepositoriesViewModel(
 
     val state: StateFlow<UiState>
 
-    val pagingDataFlow: Flow<PagingData<Repo>>
+    val pagingDataFlow: Flow<PagingData<UiModel>>
 
     val accept: (UiEvent) -> Unit
+
+    private val UiModel.RepoItem.roundedStarCount: Int
+        get() = this.repo.stars / 10_000
 
     init {
         val initialQuery: String = savedStateHandle[LAST_SEARCH_QUERY] ?: DEFAULT_QUERY
@@ -101,8 +106,22 @@ class SearchRepositoriesViewModel(
         }
     }
 
-    private fun repoPagingStream(queryString: String): Flow<PagingData<Repo>> =
+    private fun repoPagingStream(queryString: String): Flow<PagingData<UiModel>> =
         repository.repoPagingStream(queryString)
+            .map { pagingData -> pagingData.map { UiModel.RepoItem(repo = it) } }
+            .map {
+                it.insertSeparators { before, after ->
+                    if (after == null) return@insertSeparators null
+                    if (before == null) return@insertSeparators UiModel.SeparatorItem("${after.roundedStarCount}0.000+ stars")
+
+                    if (before.roundedStarCount <= after.roundedStarCount) return@insertSeparators null
+                    if (after.roundedStarCount >= 1) {
+                        UiModel.SeparatorItem("${after.roundedStarCount}0.000+ stars")
+                    } else {
+                        UiModel.SeparatorItem("< 10.000+ stars")
+                    }
+                }
+            }
 
     override fun onCleared() {
         savedStateHandle[LAST_SEARCH_QUERY] = state.value.query
@@ -121,6 +140,11 @@ data class UiState(
     val lastQueryScrolled: String = DEFAULT_QUERY,
     val hasScrolled: Boolean = false
 )
+
+sealed class UiModel {
+    data class RepoItem(val repo: Repo) : UiModel()
+    data class SeparatorItem(val description: String) : UiModel()
+}
 
 private const val VISIBLE_THRESHOLD = 5
 private const val LAST_SEARCH_QUERY: String = "last_search_query"
