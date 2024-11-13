@@ -19,9 +19,12 @@ package com.example.android.codelabs.paging.ui
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.inputmethod.EditorInfo
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.isVisible
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.paging.CombinedLoadStates
 import androidx.paging.LoadState
 import androidx.paging.PagingData
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -38,7 +41,6 @@ import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.single
 import kotlinx.coroutines.launch
 
 class SearchRepositoriesActivity : AppCompatActivity() {
@@ -147,6 +149,35 @@ class SearchRepositoriesActivity : AppCompatActivity() {
         pagingData: Flow<PagingData<Repo>>,
         onScrollChanged: (UiEvent.Scroll) -> Unit
     ) {
+        retryButton.setOnClickListener { repoAdapter.retry() }
+
+        lifecycleScope.launch {
+            repoAdapter.loadStateFlow.collectLatest { loadState: CombinedLoadStates ->
+                val isListEmpty =
+                    loadState.refresh is LoadState.NotLoading && repoAdapter.itemCount == 0
+                emptyList.isVisible = isListEmpty
+                list.isVisible = isListEmpty.not()
+                progressBar.isVisible = loadState.source.refresh is LoadState.Loading
+                retryButton.isVisible = loadState.source.refresh is LoadState.Error
+
+                val errorState =
+                    loadState.refresh as? LoadState.Error
+                loadState.source.refresh as? LoadState.Error
+                    ?: loadState.source.append as? LoadState.Error
+                    ?: loadState.source.prepend as? LoadState.Error
+                    ?: loadState.append as? LoadState.Error
+                    ?: loadState.prepend as? LoadState.Error
+
+                errorState?.let {
+                    Toast.makeText(
+                        this@SearchRepositoriesActivity,
+                        "\uD83D\uDE28 Wooops ${it.error}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+
+            }
+        }
         list.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                 if (dy != 0) onScrollChanged(UiEvent.Scroll(currentQuery = uiState.value.query))
@@ -167,6 +198,7 @@ class SearchRepositoriesActivity : AppCompatActivity() {
             hasNotScrolled,
             Boolean::and
         ).distinctUntilChanged()
+
         isNotLoading.onEach { println("로그: isNotLoading: $it") }.launchIn(lifecycleScope)
         hasNotScrolled.onEach { println("로그: hasNotScrolled: $it") }.launchIn(lifecycleScope)
         shouldScrollToTop.onEach { println("로그: shouldScrollToTop: $it") }.launchIn(lifecycleScope)

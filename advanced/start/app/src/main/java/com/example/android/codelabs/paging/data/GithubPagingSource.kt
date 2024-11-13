@@ -31,8 +31,10 @@ class GithubPagingSource(
                 nextKey = nextPage
             )
         } catch (exception: IOException) {
+            println("로그 : IOException : ${exception.message}")
             return LoadResult.Error(exception)
         } catch (exception: HttpException) {
+            println("로그 : HttpException : ${exception.message}")
             return LoadResult.Error(exception)
         }
     }
