@@ -19,15 +19,18 @@ package com.example.android.codelabs.paging.ui
 import android.os.Bundle
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.paging.CombinedLoadStates
+import androidx.paging.LoadState
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.android.codelabs.paging.Injection
 import com.example.android.codelabs.paging.databinding.ActivityArticlesBinding
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class ArticleActivity : AppCompatActivity() {
@@ -48,14 +51,21 @@ class ArticleActivity : AppCompatActivity() {
 
         binding.bindAdapter(articleAdapter = articleAdapter)
 
-        // Collect from the Article Flow in the ViewModel, and submit it to the
-        // ListAdapter.
         lifecycleScope.launch {
-            // We repeat on the STARTED lifecycle because an Activity may be PAUSED
-            // but still visible on the screen, for example in a multi window app
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                items.collect {
-                    articleAdapter.submitList(it)
+                articleAdapter.loadStateFlow.collect { combineLoadStates: CombinedLoadStates ->
+                    binding.prependProgress.isVisible =
+                        combineLoadStates.source.prepend is LoadState.Loading
+                    binding.appendProgress.isVisible =
+                        combineLoadStates.source.append is LoadState.Loading
+                }
+            }
+        }
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                items.collectLatest {
+                    articleAdapter.submitData(it)
                 }
             }
         }
