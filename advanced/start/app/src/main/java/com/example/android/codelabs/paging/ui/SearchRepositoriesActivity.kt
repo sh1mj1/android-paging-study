@@ -68,6 +68,10 @@ class SearchRepositoriesActivity : AppCompatActivity() {
     /**
      * Binds the [UiState] provided  by the [SearchRepositoriesViewModel] to the UI,
      * and allows the UI to feed back user actions to it.
+     *
+     * [ReposLoadStateAdapter]: [LoadStateAdapter를] 확장하여 header와 footer에 표시할 뷰를 정의합니다.
+     * [header]: 이전 페이지를 로드하거나, 데이터 로드 중 오류가 발생했을 때 나타납니다. retry()를 호출해 다시 시도할 수 있습니다.
+     * [footer]: 다음 페이지를 로드할 때 상태를 표시하며, 로딩 중일 때나 오류가 발생했을 때 나타납니다.
      */
     private fun ActivitySearchRepositoriesBinding.bindState(
         uiState: StateFlow<UiState>,
@@ -75,8 +79,10 @@ class SearchRepositoriesActivity : AppCompatActivity() {
         uiEvent: (UiEvent) -> Unit
     ) {
         val repoAdapter = ReposAdapter()
-        list.adapter = repoAdapter
-
+        list.adapter = repoAdapter.withLoadStateHeaderAndFooter(
+            header = ReposLoadStateAdapter { repoAdapter.retry() },
+            footer = ReposLoadStateAdapter { repoAdapter.retry() }
+        )
         bindSearch(
             uiState = uiState,
             onQueryChanged = uiEvent
