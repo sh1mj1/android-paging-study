@@ -2,7 +2,10 @@ package com.example.android.codelabs.paging.data
 
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
+import kotlinx.coroutines.delay
 import java.time.LocalDateTime
+
+private const val LOAD_DELAY_MILLIS = 3_000L
 
 class ArticlePagingSource : PagingSource<Int, Article>() {
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Article> {
@@ -26,6 +29,7 @@ class ArticlePagingSource : PagingSource<Int, Article>() {
 
         val nextKey = range.last + 1
 
+        if (start != STARTING_KEY) delay(LOAD_DELAY_MILLIS)
         return LoadResult.Page(
             data = data,
             prevKey = prevKey,

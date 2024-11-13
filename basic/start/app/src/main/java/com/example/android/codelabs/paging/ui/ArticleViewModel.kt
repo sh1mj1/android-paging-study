@@ -43,6 +43,6 @@ class ArticleViewModel(
         ).flow.cachedIn(viewModelScope)
 
     private companion object {
-        const val ITEM_PER_PAGE = 50
+        const val ITEM_PER_PAGE = 30
     }
 }
