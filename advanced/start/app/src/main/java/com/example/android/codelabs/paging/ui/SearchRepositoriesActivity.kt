@@ -47,28 +47,26 @@ class SearchRepositoriesActivity : AppCompatActivity() {
         val view = binding.root
         setContentView(view)
 
-        // get the view model
         val viewModel = ViewModelProvider(
             this,
             Injection.provideViewModelFactory(owner = this)
         )[SearchRepositoriesViewModel::class.java]
 
-        // add dividers between RecyclerView's row items
         val decoration = DividerItemDecoration(this, DividerItemDecoration.VERTICAL)
         binding.list.addItemDecoration(decoration)
 
         // bind the state
-        binding.bindState1(
+        binding.bindState(
             uiState = viewModel.state1,
             uiActions = viewModel.accept1,
             pagingData = viewModel.pagingDataFlow,
         )
     }
 
-    private fun ActivitySearchRepositoriesBinding.bindState1(
-        uiState: StateFlow<UiState1>,
+    private fun ActivitySearchRepositoriesBinding.bindState(
+        uiState: StateFlow<UiState>,
         pagingData: Flow<PagingData<Repo>>,
-        uiActions: (UiAction1) -> Unit
+        uiActions: (UiAction) -> Unit
     ) {
         val repoAdapter = ReposAdapter()
         list.adapter = repoAdapter.withLoadStateHeaderAndFooter(
@@ -76,11 +74,11 @@ class SearchRepositoriesActivity : AppCompatActivity() {
             footer = ReposLoadStateAdapter { repoAdapter.retry() }
         )
 
-        bindSearch1(
+        bindSearch(
             uiState = uiState,
             onQueryChanged = uiActions
         )
-        bindList1(
+        bindList(
             repoAdapter = repoAdapter,
             uiState = uiState,
             pagingData = pagingData,
@@ -88,13 +86,13 @@ class SearchRepositoriesActivity : AppCompatActivity() {
         )
     }
 
-    private fun ActivitySearchRepositoriesBinding.bindSearch1(
-        uiState: StateFlow<UiState1>,
-        onQueryChanged: (UiAction1.Search) -> Unit
+    private fun ActivitySearchRepositoriesBinding.bindSearch(
+        uiState: StateFlow<UiState>,
+        onQueryChanged: (UiAction.Search) -> Unit
     ) {
         searchRepo.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_GO) {
-                updateRepoListFromInput1(onQueryChanged)
+                updateRepoListFromInput(onQueryChanged)
                 true
             } else {
                 false
@@ -102,7 +100,7 @@ class SearchRepositoriesActivity : AppCompatActivity() {
         }
         searchRepo.setOnKeyListener { _, keyCode, event ->
             if (event.action == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_ENTER) {
-                updateRepoListFromInput1(onQueryChanged)
+                updateRepoListFromInput(onQueryChanged)
                 true
             } else {
                 false
@@ -117,15 +115,15 @@ class SearchRepositoriesActivity : AppCompatActivity() {
         }
     }
 
-    private fun ActivitySearchRepositoriesBinding.bindList1(
+    private fun ActivitySearchRepositoriesBinding.bindList(
         repoAdapter: ReposAdapter,
-        uiState: StateFlow<UiState1>,
+        uiState: StateFlow<UiState>,
         pagingData: Flow<PagingData<Repo>>,
-        onScrollChanged: (UiAction1.Scroll) -> Unit
+        onScrollChanged: (UiAction.Scroll) -> Unit
     ) {
         list.addOnScrollListener(object : OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                if (dy != 0) onScrollChanged(UiAction1.Scroll(currentQuery = uiState.value.query))
+                if (dy != 0) onScrollChanged(UiAction.Scroll(currentQuery = uiState.value.query))
             }
         })
         val notLoading = repoAdapter.loadStateFlow
@@ -154,11 +152,11 @@ class SearchRepositoriesActivity : AppCompatActivity() {
         }
     }
 
-    private fun ActivitySearchRepositoriesBinding.updateRepoListFromInput1(onQueryChanged: (UiAction1.Search) -> Unit) {
+    private fun ActivitySearchRepositoriesBinding.updateRepoListFromInput(onQueryChanged: (UiAction.Search) -> Unit) {
         searchRepo.text.trim().let {
             if (it.isNotEmpty()) {
                 list.scrollToPosition(0)
-                onQueryChanged(UiAction1.Search(query = it.toString()))
+                onQueryChanged(UiAction.Search(query = it.toString()))
             }
         }
     }

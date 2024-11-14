@@ -46,29 +46,29 @@ class SearchRepositoriesViewModel(
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    val state1: StateFlow<UiState1>
-    val accept1: (UiAction1) -> Unit
+    val state1: StateFlow<UiState>
+    val accept1: (UiAction) -> Unit
     val pagingDataFlow: Flow<PagingData<Repo>>
 
     init {
         val initialQuery: String = savedStateHandle.get(LAST_SEARCH_QUERY) ?: DEFAULT_QUERY
         val lastQueryScrolled: String = savedStateHandle.get(LAST_QUERY_SCROLLED) ?: DEFAULT_QUERY
-        val actionStateFlow = MutableSharedFlow<UiAction1>()
+        val actionStateFlow = MutableSharedFlow<UiAction>()
 
         val searches = actionStateFlow
-            .filterIsInstance<UiAction1.Search>()
+            .filterIsInstance<UiAction.Search>()
             .distinctUntilChanged()
-            .onStart { emit(UiAction1.Search(query = initialQuery)) }
+            .onStart { emit(UiAction.Search(query = initialQuery)) }
 
         val queriesScrolled = actionStateFlow
-            .filterIsInstance<UiAction1.Scroll>()
+            .filterIsInstance<UiAction.Scroll>()
             .distinctUntilChanged()
             .shareIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
                 replay = 1
             )
-            .onStart { emit(UiAction1.Scroll(currentQuery = lastQueryScrolled)) }
+            .onStart { emit(UiAction.Scroll(currentQuery = lastQueryScrolled)) }
 
         @Suppress("OPT_IN_USAGE")
         pagingDataFlow = searches
@@ -80,7 +80,7 @@ class SearchRepositoriesViewModel(
             queriesScrolled,
             ::Pair
         ).map { (search, scroll) ->
-            UiState1(
+            UiState(
                 query = search.query,
                 lastQueryScrolled = scroll.currentQuery,
                 // If the search query matches the scroll query, the user has scrolled
@@ -90,7 +90,7 @@ class SearchRepositoriesViewModel(
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
-                initialValue = UiState1()
+                initialValue = UiState()
             )
 
         accept1 = { action ->
@@ -110,13 +110,13 @@ class SearchRepositoriesViewModel(
     }
 }
 
-sealed class UiAction1 {
-    data class Search(val query: String) : UiAction1()
-    data class Scroll(val currentQuery: String) : UiAction1()
+sealed class UiAction {
+    data class Search(val query: String) : UiAction()
+    data class Scroll(val currentQuery: String) : UiAction()
 
 }
 
-data class UiState1(
+data class UiState(
     val query: String = DEFAULT_QUERY,
     val lastQueryScrolled: String = DEFAULT_QUERY,
     val hasNotScrolledForCurrentSearch: Boolean = false
