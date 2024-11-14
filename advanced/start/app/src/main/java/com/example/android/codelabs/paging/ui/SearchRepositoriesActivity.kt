@@ -17,6 +17,7 @@
 package com.example.android.codelabs.paging.ui
 
 import android.os.Bundle
+import android.util.Log
 import android.view.KeyEvent
 import android.view.inputmethod.EditorInfo
 import android.widget.Toast
@@ -32,6 +33,7 @@ import androidx.recyclerview.widget.RecyclerView.OnScrollListener
 import com.example.android.codelabs.paging.Injection
 import com.example.android.codelabs.paging.databinding.ActivitySearchRepositoriesBinding
 import com.example.android.codelabs.paging.model.Repo
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -50,8 +52,10 @@ class SearchRepositoriesActivity : AppCompatActivity() {
         setContentView(view)
 
         val viewModel = ViewModelProvider(
-            this,
-            Injection.provideViewModelFactory(owner = this)
+            this, Injection.provideViewModelFactory(
+                context = this,
+                owner = this
+            )
         )[SearchRepositoriesViewModel::class.java]
 
         val decoration = DividerItemDecoration(this, DividerItemDecoration.VERTICAL)
