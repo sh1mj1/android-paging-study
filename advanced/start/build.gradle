@@ -44,16 +44,16 @@ task clean(type: Delete) {
 }
 
 ext {
-    compileSdkVersion = 31
+    compileSdkVersion = 33
     minSdkVersion = 21
-    targetSdkVersion = 31
+    targetSdkVersion = 33
     supportLibVersion = '1.4.0'
     coreVersion = '1.7.0'
     recyclerViewVersion = '1.2.1'
     constraintLayoutVersion = '2.1.2'
     materialVersion = '1.4.0'
     lifecycleVersion = '2.4.0'
-    roomVersion = '2.3.0'
+    roomVersion = '2.5.2'
     pagingVersion = '3.1.0'
     retrofitVersion = '2.9.0'
     okhttpLoggingInterceptorVersion = '4.9.0'
