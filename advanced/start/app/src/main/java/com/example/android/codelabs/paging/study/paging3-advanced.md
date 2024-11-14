@@ -91,4 +91,5 @@ Requests data when the user is close to the end of the list.
 
 
 
+![img.png](Paging-RemoteMediator.png)
 
