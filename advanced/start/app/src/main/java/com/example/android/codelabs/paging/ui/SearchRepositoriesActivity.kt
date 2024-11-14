@@ -20,6 +20,7 @@ import android.os.Bundle
 import android.view.KeyEvent
 import android.view.inputmethod.EditorInfo
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.isVisible
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.paging.LoadState
@@ -150,8 +151,18 @@ class SearchRepositoriesActivity : AppCompatActivity() {
                 if (shouldScroll) list.scrollToPosition(0)
             }
         }
-    }
 
+        lifecycleScope.launch {
+            repoAdapter.loadStateFlow.collect { loadState ->
+                val listIsEmpty =
+                    loadState.refresh is LoadState.NotLoading && repoAdapter.itemCount == 0
+                emptyList.isVisible = listIsEmpty
+
+                list.isVisible = !listIsEmpty
+            }
+        }
+    }
+    
     private fun ActivitySearchRepositoriesBinding.updateRepoListFromInput(onQueryChanged: (UiAction.Search) -> Unit) {
         searchRepo.text.trim().let {
             if (it.isNotEmpty()) {
