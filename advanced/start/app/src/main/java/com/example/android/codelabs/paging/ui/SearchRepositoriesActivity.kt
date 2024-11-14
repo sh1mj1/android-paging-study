@@ -48,7 +48,10 @@ class SearchRepositoriesActivity : AppCompatActivity() {
         setContentView(view)
 
         // get the view model
-        val viewModel = ViewModelProvider(this, Injection.provideViewModelFactory(owner = this))[SearchRepositoriesViewModel::class.java]
+        val viewModel = ViewModelProvider(
+            this,
+            Injection.provideViewModelFactory(owner = this)
+        )[SearchRepositoriesViewModel::class.java]
 
         // add dividers between RecyclerView's row items
         val decoration = DividerItemDecoration(this, DividerItemDecoration.VERTICAL)
@@ -68,7 +71,10 @@ class SearchRepositoriesActivity : AppCompatActivity() {
         uiActions: (UiAction1) -> Unit
     ) {
         val repoAdapter = ReposAdapter()
-        list.adapter = repoAdapter
+        list.adapter = repoAdapter.withLoadStateHeaderAndFooter(
+            header = ReposLoadStateAdapter { repoAdapter.retry() },
+            footer = ReposLoadStateAdapter { repoAdapter.retry() }
+        )
 
         bindSearch1(
             uiState = uiState,
