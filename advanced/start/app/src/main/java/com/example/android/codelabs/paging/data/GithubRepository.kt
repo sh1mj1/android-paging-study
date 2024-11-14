@@ -24,7 +24,7 @@ import com.example.android.codelabs.paging.model.Repo
 import kotlinx.coroutines.flow.Flow
 
 class GithubRepository(private val service: GithubService) {
-    fun searchResultStream1(query: String): Flow<PagingData<Repo>> {
+    fun searchResultStream(query: String): Flow<PagingData<Repo>> {
         return Pager(
             config = PagingConfig(
                 pageSize = NETWORK_PAGE_SIZE,

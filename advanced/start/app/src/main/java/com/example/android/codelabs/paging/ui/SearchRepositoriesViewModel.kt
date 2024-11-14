@@ -21,6 +21,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import androidx.paging.insertSeparators
+import androidx.paging.map
 import com.example.android.codelabs.paging.data.GithubRepository
 import com.example.android.codelabs.paging.model.Repo
 import kotlinx.coroutines.flow.Flow
@@ -37,10 +39,6 @@ import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/**
- * ViewModel for the [SearchRepositoriesActivity] screen.
- * The ViewModel works with the [GithubRepository] to get the data.
- */
 class SearchRepositoriesViewModel(
     private val repository: GithubRepository,
     private val savedStateHandle: SavedStateHandle
@@ -48,7 +46,7 @@ class SearchRepositoriesViewModel(
 
     val state1: StateFlow<UiState>
     val accept1: (UiAction) -> Unit
-    val pagingDataFlow: Flow<PagingData<Repo>>
+    val pagingDataFlow: Flow<PagingData<UiModel>>
 
     init {
         val initialQuery: String = savedStateHandle.get(LAST_SEARCH_QUERY) ?: DEFAULT_QUERY
@@ -99,8 +97,27 @@ class SearchRepositoriesViewModel(
 
     }
 
-    private fun searchRepo(queryString: String): Flow<PagingData<Repo>> =
-        repository.searchResultStream1(queryString)
+    private fun searchRepo(queryString: String): Flow<PagingData<UiModel>> =
+        repository.searchResultStream(queryString)
+            .map { pagingData -> pagingData.map { UiModel.RepoItem(it) } }
+            .map { pagingData ->
+                pagingData.insertSeparators { before, after ->
+                    when {
+                        (after == null) -> return@insertSeparators null
+                        (before == null) -> return@insertSeparators UiModel.SeparatorItem("${after.roundedStarCount}0k🔺 stars")
+                        (before.roundedStarCount > after.roundedStarCount) -> {
+                            if (after.roundedStarCount >= 1) {
+                                UiModel.SeparatorItem("${after.roundedStarCount}0k🔺 stars")
+                            } else {
+                                UiModel.SeparatorItem("10k🔻 stars")
+                            }
+                        }
+
+                        else -> return@insertSeparators null
+                    }
+                }
+            }
+
 
     override fun onCleared() {
         savedStateHandle[LAST_SEARCH_QUERY] = state1.value.query
@@ -125,3 +142,11 @@ data class UiState(
 private const val LAST_SEARCH_QUERY: String = "last_search_query"
 private const val LAST_QUERY_SCROLLED: String = "last_query_scrolled"
 private const val DEFAULT_QUERY = "Android"
+
+sealed class UiModel {
+    data class RepoItem(val repo: Repo) : UiModel()
+    data class SeparatorItem(val description: String) : UiModel()
+}
+
+private val UiModel.RepoItem.roundedStarCount: Int
+    get() = this.repo.stars / 10_000
