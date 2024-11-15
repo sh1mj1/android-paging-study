@@ -40,6 +40,6 @@ class GithubRepository(
         ).flow
 
     companion object {
-        const val NETWORK_PAGE_SIZE = 50
+        const val NETWORK_PAGE_SIZE = 20
     }
 }
