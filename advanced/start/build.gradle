@@ -23,7 +23,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.7.2'
+        classpath 'com.android.tools.build:gradle:8.5.2'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.22"
     }
 }
@@ -53,7 +53,7 @@ ext {
     constraintLayoutVersion = '2.1.2'
     materialVersion = '1.4.0'
     lifecycleVersion = '2.4.0'
-    roomVersion = '2.3.0'
+    roomVersion = '2.4.3'
     pagingVersion = '3.1.0'
     retrofitVersion = '2.9.0'
     okhttpLoggingInterceptorVersion = '4.9.0'

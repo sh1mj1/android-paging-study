@@ -22,17 +22,24 @@ import android.view.inputmethod.EditorInfo
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
-import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.distinctUntilChanged
-import androidx.lifecycle.map
+import androidx.lifecycle.lifecycleScope
+import androidx.paging.CombinedLoadStates
+import androidx.paging.LoadState
+import androidx.paging.PagingData
 import androidx.recyclerview.widget.DividerItemDecoration
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import androidx.recyclerview.widget.RecyclerView.OnScrollListener
 import com.example.android.codelabs.paging.Injection
 import com.example.android.codelabs.paging.databinding.ActivitySearchRepositoriesBinding
-import com.example.android.codelabs.paging.model.RepoSearchResult
+import com.example.android.codelabs.paging.utils.RemotePresentationState
+import com.example.android.codelabs.paging.utils.asRemotePresentationState
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 class SearchRepositoriesActivity : AppCompatActivity() {
 
@@ -42,9 +49,12 @@ class SearchRepositoriesActivity : AppCompatActivity() {
         val view = binding.root
         setContentView(view)
 
-        // get the view model
-        val viewModel = ViewModelProvider(this, Injection.provideViewModelFactory(owner = this))
-            .get(SearchRepositoriesViewModel::class.java)
+        val viewModel = ViewModelProvider(
+            this, Injection.provideViewModelFactory(
+                context = this,
+                owner = this
+            )
+        )[SearchRepositoriesViewModel::class.java]
 
         // add dividers between RecyclerView's row items
         val decoration = DividerItemDecoration(this, DividerItemDecoration.VERTICAL)
@@ -53,35 +63,47 @@ class SearchRepositoriesActivity : AppCompatActivity() {
         // bind the state
         binding.bindState(
             uiState = viewModel.state,
-            uiActions = viewModel.accept
+            pagingData = viewModel.pagingDataFlow,
+            uiEvent = viewModel.accept
         )
     }
 
     /**
      * Binds the [UiState] provided  by the [SearchRepositoriesViewModel] to the UI,
      * and allows the UI to feed back user actions to it.
+     *
+     * [ReposLoadStateAdapter]: [LoadStateAdapter를] 확장하여 header와 footer에 표시할 뷰를 정의합니다.
+     * [header]: 이전 페이지를 로드하거나, 데이터 로드 중 오류가 발생했을 때 나타납니다. retry()를 호출해 다시 시도할 수 있습니다.
+     * [footer]: 다음 페이지를 로드할 때 상태를 표시하며, 로딩 중일 때나 오류가 발생했을 때 나타납니다.
      */
     private fun ActivitySearchRepositoriesBinding.bindState(
-        uiState: LiveData<UiState>,
-        uiActions: (UiAction) -> Unit
+        uiState: StateFlow<UiState>,
+        pagingData: Flow<PagingData<UiModel>>,
+        uiEvent: (UiEvent) -> Unit
     ) {
         val repoAdapter = ReposAdapter()
-        list.adapter = repoAdapter
-
+        val header = ReposLoadStateAdapter { repoAdapter.retry() }
+        val footer = ReposLoadStateAdapter { repoAdapter.retry() }
+        list.adapter = repoAdapter.withLoadStateHeaderAndFooter(
+            header = header,
+            footer = footer
+        )
         bindSearch(
             uiState = uiState,
-            onQueryChanged = uiActions
+            onQueryChanged = uiEvent
         )
         bindList(
+            header = header,
             repoAdapter = repoAdapter,
             uiState = uiState,
-            onScrollChanged = uiActions
+            pagingData = pagingData,
+            onScrollChanged = uiEvent
         )
     }
 
     private fun ActivitySearchRepositoriesBinding.bindSearch(
-        uiState: LiveData<UiState>,
-        onQueryChanged: (UiAction.Search) -> Unit
+        uiState: StateFlow<UiState>,
+        onQueryChanged: (UiEvent.Search) -> Unit
     ) {
         searchRepo.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_GO) {
@@ -100,72 +122,102 @@ class SearchRepositoriesActivity : AppCompatActivity() {
             }
         }
 
-        uiState
-            .map(UiState::query)
-            .distinctUntilChanged()
-            .observe(this@SearchRepositoriesActivity, searchRepo::setText)
+        lifecycleScope.launch {
+            uiState
+                .map { it.query }
+                .distinctUntilChanged()
+                .collect(searchRepo::setText)
+        }
     }
 
-    private fun ActivitySearchRepositoriesBinding.updateRepoListFromInput(onQueryChanged: (UiAction.Search) -> Unit) {
+    private fun ActivitySearchRepositoriesBinding.updateRepoListFromInput(onQueryChanged: (UiEvent.Search) -> Unit) {
         searchRepo.text.trim().let {
             if (it.isNotEmpty()) {
                 list.scrollToPosition(0)
-                onQueryChanged(UiAction.Search(query = it.toString()))
+                onQueryChanged(UiEvent.Search(query = it.toString()))
             }
         }
     }
 
+    /**
+     *
+     * [CombinedLoadStates]를 사용하면 세 가지 유형의 로드 작업의 로드 상태를 가져올 수 있습니다.
+     *
+     * [CombinedLoadStates.refresh]: PagingData를 처음 로드할 때의 로드 상태를 나타냅니다.
+     * [CombinedLoadStates.prepend]: 목록의 시작 부분에서 데이터를 로드하는 작업의 로드 상태를 나타냅니다.
+     * [CombinedLoadStates.append]: 목록의 끝에서 데이터를 로드하는 작업의 로드 상태를 나타냅니다.
+     * */
     private fun ActivitySearchRepositoriesBinding.bindList(
+        header: ReposLoadStateAdapter,
         repoAdapter: ReposAdapter,
-        uiState: LiveData<UiState>,
-        onScrollChanged: (UiAction.Scroll) -> Unit
+        uiState: StateFlow<UiState>,
+        pagingData: Flow<PagingData<UiModel>>,
+        onScrollChanged: (UiEvent.Scroll) -> Unit
     ) {
-        setupScrollListener(onScrollChanged)
+        retryButton.setOnClickListener { repoAdapter.retry() }
 
-        uiState
-            .map(UiState::searchResult)
-            .distinctUntilChanged()
-            .observe(this@SearchRepositoriesActivity) { result ->
-                when (result) {
-                    is RepoSearchResult.Success -> {
-                        showEmptyList(result.data.isEmpty())
-                        repoAdapter.submitList(result.data)
-                    }
-                    is RepoSearchResult.Error -> {
-                        Toast.makeText(
-                            this@SearchRepositoriesActivity,
-                            "\uD83D\uDE28 Wooops $result.message}",
-                            Toast.LENGTH_LONG
-                        ).show()
-                    }
-                }
-            }
-    }
-
-    private fun ActivitySearchRepositoriesBinding.showEmptyList(show: Boolean) {
-        emptyList.isVisible = show
-        list.isVisible = !show
-    }
-
-    private fun ActivitySearchRepositoriesBinding.setupScrollListener(
-        onScrollChanged: (UiAction.Scroll) -> Unit
-    ) {
-        val layoutManager = list.layoutManager as LinearLayoutManager
-        list.addOnScrollListener(object : OnScrollListener() {
+        list.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                super.onScrolled(recyclerView, dx, dy)
-                val totalItemCount = layoutManager.itemCount
-                val visibleItemCount = layoutManager.childCount
-                val lastVisibleItem = layoutManager.findLastVisibleItemPosition()
-
-                onScrollChanged(
-                    UiAction.Scroll(
-                        visibleItemCount = visibleItemCount,
-                        lastVisibleItemPosition = lastVisibleItem,
-                        totalItemCount = totalItemCount
-                    )
-                )
+                if (dy != 0) onScrollChanged(UiEvent.Scroll(currentQuery = uiState.value.query))
             }
         })
+        val isNotLoading = repoAdapter.loadStateFlow
+            .asRemotePresentationState()
+            .map { it == RemotePresentationState.PRESENTED }
+
+        val hasNotScrolled = uiState
+            .map { it.hasScrolled.not() }
+            .distinctUntilChanged()
+        val shouldScrollToTop = combine(
+            isNotLoading,
+            hasNotScrolled,
+            Boolean::and
+        ).distinctUntilChanged()
+
+        lifecycleScope.launch {
+            pagingData.collectLatest(repoAdapter::submitData)
+        }
+
+        lifecycleScope.launch {
+            shouldScrollToTop.collect { shouldScroll ->
+                if (shouldScroll) list.scrollToPosition(0)
+            }
+        }
+
+        lifecycleScope.launch {
+            repoAdapter.loadStateFlow.collect { loadState: CombinedLoadStates ->
+
+                header.loadState = loadState.mediator
+                    ?.refresh
+                    ?.takeIf { it is LoadState.Error && repoAdapter.itemCount > 0 }
+                    ?: loadState.prepend
+
+                val isListEmpty =
+                    loadState.refresh is LoadState.NotLoading && repoAdapter.itemCount == 0
+                emptyList.isVisible = isListEmpty
+                list.isVisible =
+                    loadState.source.refresh is LoadState.NotLoading || loadState.mediator?.refresh is LoadState.NotLoading
+                progressBar.isVisible = loadState.mediator?.refresh is LoadState.Loading
+                retryButton.isVisible =
+                    loadState.mediator?.refresh is LoadState.Error && repoAdapter.itemCount == 0
+
+                val errorState =
+                    loadState.refresh as? LoadState.Error
+                loadState.source.refresh as? LoadState.Error
+                    ?: loadState.source.append as? LoadState.Error
+                    ?: loadState.source.prepend as? LoadState.Error
+                    ?: loadState.append as? LoadState.Error
+                    ?: loadState.prepend as? LoadState.Error
+
+                errorState?.let {
+                    Toast.makeText(
+                        this@SearchRepositoriesActivity,
+                        "\uD83D\uDE28 Wooops ${it.error}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+
+            }
+        }
     }
 }
