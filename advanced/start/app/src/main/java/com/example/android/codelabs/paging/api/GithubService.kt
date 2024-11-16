@@ -37,7 +37,7 @@ interface GithubService {
     suspend fun searchRepos(
         @Query("q") query: String,
         @Query("page") page: Int,
-        @Query("per_page") itemsPerPage: Int
+        @Query("per_page") itemsPerPage: Int,
     ): RepoSearchResponse
 
     companion object {
@@ -45,12 +45,15 @@ interface GithubService {
 
         fun create(): GithubService {
             val logger = HttpLoggingInterceptor()
-            logger.level = Level.BASIC
+            logger.level = Level.BODY
 
-            val client = OkHttpClient.Builder()
-                .addInterceptor(logger)
-                .build()
-            return Retrofit.Builder()
+            val client =
+                OkHttpClient
+                    .Builder()
+                    .addInterceptor(logger)
+                    .build()
+            return Retrofit
+                .Builder()
                 .baseUrl(BASE_URL)
                 .client(client)
                 .addConverterFactory(GsonConverterFactory.create())
