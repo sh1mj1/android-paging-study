@@ -18,6 +18,7 @@ package com.example.android.codelabs.paging.ui
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import com.example.android.codelabs.paging.data.Article
@@ -26,7 +27,7 @@ import com.example.android.codelabs.paging.databinding.ArticleViewholderBinding
 /**
  * Adapter for an [Article] [List].
  */
-class ArticleAdapter : ListAdapter<Article, ArticleViewHolder>(ARTICLE_DIFF_CALLBACK) {
+class ArticleAdapter : PagingDataAdapter<Article, ArticleViewHolder>(ARTICLE_DIFF_CALLBACK) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ArticleViewHolder =
         ArticleViewHolder(
