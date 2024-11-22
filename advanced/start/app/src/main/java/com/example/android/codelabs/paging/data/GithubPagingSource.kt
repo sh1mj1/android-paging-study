@@ -1,5 +1,6 @@
 package com.example.android.codelabs.paging.data
 
+import android.util.Log
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.example.android.codelabs.paging.api.GithubService
@@ -24,8 +25,9 @@ class GithubPagingSource(
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Repo> {
         // 로드 페이지, 로드 사이즈
         val position = params.key ?: GITHUB_STARTING_PAGE_INDEX
-        val apiQuery = query + IN_QUALIFIER
+        val apiQuery = "$query $IN_QUALIFIER"
 
+        Log.d("load", "Loading data for query: $apiQuery, position: $position, load size: ${params.loadSize}")
         return try {
             val response = service.searchRepos(apiQuery, position, params.loadSize)
             val repos = response.items
